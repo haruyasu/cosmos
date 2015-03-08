@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="ja">
+<head>
+	<meta charset="UTF-8">
+	<title>Cosmos</title>
+	<style type="text/css">
+        html {
+            overflow: hidden;
+        }
+		body{
+			background-color: #000;
+            margin: 0;
+            padding: 0;
+		}
+	</style>
+</head>
+<body>
+	<div id="stage"></div>
+	<script src="js/three.min.js"></script>
+	<script src="js/OrbitControls.js"></script>
+	<script src="js/detector.js"></script>
+	<script src="js/stats.min.js"></script>
+	<script>
+		(function(){
+			var degree = 0;
+			var scene = new THREE.Scene();
+
+			//地球
+			var geometry = new THREE.SphereGeometry(1.0,32,16);
+			var texture = new THREE.ImageUtils.loadTexture('img/earth.jpg');
+			var material = new THREE.MeshPhongMaterial({
+				map: texture,
+				color: 0xFFFFFF,
+				ambient:0xffffff,
+				specular:0xcccccc,
+				shininess:2,
+				metal:true
+			});
+			var mesh = new THREE.Mesh(geometry,material);
+			scene.add(mesh);
+
+			//雲
+			var cgeometry = new THREE.SphereGeometry(1.01,32,16);
+			var ctexture = new THREE.ImageUtils.loadTexture('img/cl.png');
+			var cmaterial = new THREE.MeshPhongMaterial({
+				map: ctexture,
+				color: 0xFFFFFF
+			});
+			cmaterial.emissive.set(0x333333);
+			cmaterial.transparent = true;
+			var cmesh = new THREE.Mesh(cgeometry,cmaterial);
+			scene.add(cmesh);
+
+			//月
+			var geometry_moon = new THREE.SphereGeometry(0.3,32,16);
+			var texture_moon = new THREE.ImageUtils.loadTexture('img/moon.jpg');
+			var material_moon = new THREE.MeshPhongMaterial({
+				map: texture_moon,
+				color: 0xffffff,
+				ambient:0xffffff,
+				specular:0xcccccc,
+				shininess:2,
+				metal:true
+			});
+			var mesh_moon = new THREE.Mesh(geometry_moon,material_moon);
+			mesh_moon.position.set(0,0,0);
+			scene.add(mesh_moon);
+
+			//パーティクル
+			var pgeometry = new THREE.Geometry();
+			for (var n = 0; n < 5000; n++) {
+				var vertex = new THREE.Vector3();
+				vertex.x = (Math.random() - 0.5)*1600;
+				vertex.y = (Math.random() - 0.5)*1600;
+				vertex.z = (Math.random() - 0.5)*1600;
+				pgeometry.vertices.push(vertex);
+			}
+			var pmaterial = new THREE.PointCloudMaterial({
+				size: 1,
+				color: 0xFFFFE0,
+				blending: THREE.AdditiveBlending,
+				transparent: true,
+				fog: true
+			});
+			var particles = new THREE.PointCloud(pgeometry, pmaterial);
+			particles.fog = new THREE.FogExp2(0xffffff, 1);
+			scene.add(particles);
+
+			//光
+			var light = new THREE.DirectionalLight(0xcccccc);
+			light.position.set(5,0,0);
+			scene.add(light);
+
+			//環境光
+			var ambient = new THREE.AmbientLight(0x333333);
+			scene.add(ambient);
+
+			//カメラ
+			var camera = new THREE.PerspectiveCamera(15,window.innerWidth / window.innerHeight);
+			camera.position.set(5,5,10);
+
+			//レンダリング
+			var renderer = new THREE.WebGLRenderer();
+			renderer.setSize(window.innerWidth, window.innerHeight);
+			renderer.setClearColor(0x000,1);
+			document.getElementById('stage').appendChild(renderer.domElement)
+
+			var basetime = +new Date;
+			var controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+			function render(){
+				requestAnimationFrame(render);
+
+				//地球
+				mesh.rotation.y = 0.05 * (+new Date - basetime) / 1000;
+				//雲
+				cmesh.rotation.y = 0.08 * (+new Date - basetime) / 1000;
+				//月
+				add_radian_moon = ((+new Date - basetime) / 1000 * Math.PI * 2 / 60)
+				mesh_moon.position.x = 2 * Math.cos(add_radian_moon);
+				mesh_moon.position.z = 2 * Math.sin(add_radian_moon);
+				mesh_moon.rotation.y = add_radian_moon;
+				//パーティクル
+				var radian = Math.PI/180;
+				degree += 0.05;
+				var dip = 30 * Math.sin(degree * radian);
+				particles.position.x = 500 * Math.cos((-90) * radian) * Math.cos(dip * radian);
+				particles.position.y = 500 * Math.sin(dip * radian);
+				particles.position.z = 500 * Math.sin((-90) * radian) * Math.cos(dip * radian);
+
+			 	renderer.render(scene, camera);
+				controls.update();
+			}
+			render();
+
+			//リサイズ
+			window.addEventListener("resize", resize, false);
+			function resize(event) {
+			  camera.aspect = window.innerWidth/window.innerHeight;
+			  camera.updateProjectionMatrix();
+			  renderer.setSize(window.innerWidth, window.innerHeight);
+			}
+		})();
+	</script>
+</body>
+</html>
